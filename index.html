@@ -1,0 +1,19 @@
+{{ define "index" }}
+
+<!DOCTYPE html>
+<html>
+        <head>
+			<title>My test app</title>
+        </head>
+
+    <body>
+		<form action="/SendRequest">
+   			<p>Введите запрос</p>
+   			<p><input name="request"></p>
+   			<p><input type="submit" value="Отправить"></p>
+  		</form>
+        <script type="text/javascript" src="/public/scripts/main.js"></script>	
+    </body>
+</html>
+
+{{ end }}
