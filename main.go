@@ -13,6 +13,8 @@ type Table_view struct {
 	id_client    string
 	client_name  string
 	client_phone string
+	order_date   string
+	client_order string
 }
 
 func main() {
@@ -38,13 +40,17 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 func RequestHandler(w http.ResponseWriter, req *http.Request) {
 	request := req.FormValue("request")
 
-	var qResult string
 	db, conEr := sql.Open("mssql", "server=localhost\\SQLExpress;user id=sa;password=mypassword;database=Example;")
 	if conEr != nil {
 		fmt.Printf("Connection error!!!: %s", conEr.Error())
 	}
 
-	rows, qEr := db.Query("SELECT * FROM Clients WHERE client_name=?;", request)
+	query := "SELECT Clients.id_client, Clients.client_name, Clients.client_phone, order_date, Goods.name FROM Orders" +
+		" INNER JOIN Clients ON Orders.id_client = Clients.id_client" +
+		" INNER JOIN Goods ON Orders.id_good = Goods.id_good" +
+		" WHERE client_name='" + request + "';"
+
+	rows, qEr := db.Query(query)
 
 	if qEr != nil {
 		fmt.Printf("An error occured while executing SQL-query: %s", qEr.Error())
@@ -53,19 +59,35 @@ func RequestHandler(w http.ResponseWriter, req *http.Request) {
 	tv := make([]*Table_view, 0)
 	for rows.Next() {
 		rw := new(Table_view)
-		rows.Scan(&rw.id_client, &rw.client_name, &rw.client_phone)
+		rows.Scan(&rw.id_client, &rw.client_name, &rw.client_phone, &rw.order_date, &rw.client_order)
 		tv = append(tv, rw)
-	}
-	for _, rw := range tv {
-		qResult += (rw.id_client + rw.client_name + rw.client_phone + "<br>")
 	}
 
 	defer rows.Close()
 	defer db.Close()
 
 	viewIndexPage(&w)
+
 	w.Write([]byte("<h1>Results for " + request + ":</h1>"))
-	for i := 0; i <= 20; i++ {
-		w.Write([]byte(qResult))
+	w.Write([]byte(viewResult(tv)))
+}
+
+func viewResult(tv []*Table_view) string {
+	qResult := "<table border=1 width=100% cellpadding=5>" +
+		"<tr>" +
+		"<th>Id</th>" +
+		"<th>Name</th>" +
+		"<th>Phone</th>" +
+		"<th>Date</th>" +
+		"<th>Ordered</th>" +
+		"</tr>" +
+		"<tr>"
+
+	for _, rw := range tv {
+		qResult += ("<td>" + rw.id_client + "</td>" + "<td>" + rw.client_name + "</td>" +
+			"<td>" + rw.client_phone + "</td>" + "<td>" + rw.order_date + "</td>" +
+			"<td>" + rw.client_order + "</td></tr>")
 	}
+	qResult += "</table>"
+	return qResult
 }
